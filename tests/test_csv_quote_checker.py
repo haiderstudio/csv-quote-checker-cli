@@ -22,7 +22,6 @@ ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "src" / "csv_quote_checker.py"
 EXAMPLES = ROOT / "examples"
 README = ROOT / "README.md"
-GOAL_DIR = Path.home() / "workspace" / "goals" / "github-automation-business"
 
 UNBALANCED = "unbalanced quote (a quote opens and never closes)"
 AFTER_CLOSE = 'bad quoting: \',\' expected after \'"\''
@@ -372,11 +371,15 @@ class TestCwdRobustness(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("unclosed.csv:3: " + UNBALANCED, result.stdout)
 
-    def test_cli_from_goal_dir(self):
-        result = subprocess.run(
-            [sys.executable, str(SRC), str(EXAMPLES / "good.csv")],
-            capture_output=True, text=True, cwd=str(GOAL_DIR),
-        )
+    def test_cli_from_unrelated_dir(self):
+        # The CLI must work from any folder, not only the repo root:
+        # run it from a fresh temp folder (no local paths involved,
+        # so this passes on a CI runner too).
+        with tempfile.TemporaryDirectory() as tmp:
+            result = subprocess.run(
+                [sys.executable, str(SRC), str(EXAMPLES / "good.csv")],
+                capture_output=True, text=True, cwd=tmp,
+            )
         self.assertEqual(result.returncode, 0)
         self.assertIn("good.csv: OK", result.stdout)
 
